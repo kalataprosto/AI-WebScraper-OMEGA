@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  scrapemaster:
+    build: .
+    cap_add: [NET_ADMIN]
+    volumes:
+      - ./data:/app/data
+    environment:
+      - STEALTH_MODE=aggressive
+    depends_on:
+      - redis
+      - tor_privoxy
+  redis:
+    image: redis:7
+  tor_privoxy:
+    image: rdsubhas/tor-privoxy-alpine
+    ports:
+      - "8118:8118"
