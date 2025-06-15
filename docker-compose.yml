@@ -3,69 +3,32 @@ version: '3.8'
 services:
   redis:
     image: redis:7-alpine
-    command: redis-server --save 60 1 --loglevel warning
-    ports:
-      - "6379:6379"
     volumes:
-      - redis_data:/data
+      - type: volume
+        source: redis_data
+        target: /data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
-      timeout: 3s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
 
   worker:
-    build:
-      context: .
-      target: worker
+    build: .
     environment:
       - CELERY_WORKER=1
       - BROKER_URL=redis://redis:6379/0
-      - RESULT_BACKEND=redis://redis:6379/1
-      - WORKER_CONCURRENCY=4
-      - WORKER_PREFETCH_MULTIPLIER=2
     depends_on:
       redis:
         condition: service_healthy
-    deploy:
-      replicas: 3
-      resources:
-        limits:
-          cpus: '0.75'
-          memory: 768M
-        reservations:
-          memory: 512M
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
 
   web:
-    build:
-      context: .
-      target: web
+    build: .
     environment:
       - CELERY_WORKER=0
-      - BROKER_URL=redis://redis:6379/0
-      - WEB_CONCURRENCY=2
     ports:
       - "8000:8000"
     depends_on:
       redis:
         condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '1.5'
-          memory: 1.5G
-      update_config:
-        parallelism: 1
-        delay: 10s
 
   monitor:
     image: rediscommander/redis-commander
@@ -73,25 +36,7 @@ services:
       - "8081:8081"
     environment:
       - REDIS_HOSTS=local:redis:6379
-      - HTTP_USER=admin
-      - HTTP_PASSWORD=${MONITOR_PASSWORD}
-    depends_on:
-      - redis
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-
-  flower:
-    image: mher/flower:1.0.0
-    ports:
-      - "5555:5555"
-    command: ["flower", "--broker=redis://redis:6379/0", "--port=5555"]
-    depends_on:
-      - redis
 
 volumes:
   redis_data:
-    name: ai-webscraper-redis-data
     driver: local
