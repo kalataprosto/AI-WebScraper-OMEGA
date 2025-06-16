@@ -1,7 +1,6 @@
 services:
   redis:
     image: redis:7-alpine
-    container_name: omega_redis
     ports:
       - "6379:6379"
     volumes:
@@ -9,54 +8,36 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
 
   worker:
     build:
       context: .
-      target: worker
-    container_name: omega_worker
+      target: base
     environment:
       - CELERY_WORKER=1
       - BROKER_URL=redis://redis:6379/0
-      - RESULT_BACKEND=redis://redis:6379/1
     depends_on:
       redis:
         condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '0.75'
-          memory: 768M
 
   web:
     build:
       context: .
-      target: web
-    container_name: omega_web
-    environment:
-      - CELERY_WORKER=0
-      - BROKER_URL=redis://redis:6379/0
+      target: base
     ports:
       - "8000:8000"
+    environment:
+      - CELERY_WORKER=0
     depends_on:
       redis:
         condition: service_healthy
 
   monitor:
     image: rediscommander/redis-commander
-    container_name: omega_monitor
     ports:
       - "8081:8081"
     environment:
       - REDIS_HOSTS=local:redis:6379
-    depends_on:
-      - redis
 
 volumes:
   redis_data:
-    name: omega_redis_data
