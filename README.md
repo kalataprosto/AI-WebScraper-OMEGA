@@ -1,4 +1,4 @@
-# AI-WebScraper-OMEGA
+# AIWS - Artificial Intelligence Website Scraper
 The most advanced and powerfull AI based webapp scraper utility that has ever been made
  🌐🤖
 The Next Evolution of Intelligent Web Extraction
